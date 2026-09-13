@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monte o Quadrinho Colorido</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&display=swap');
+
+:root{
+  --paper:#fffaf2;
+  --panel:#ffffff;
+  --ink:#4a3420;
+  --ink-soft:#8a7458;
+  --accent:#f2a541;
+  --accent-dark:#b96f17;
+  --accent-soft:#fdecd1;
+  --line:#eee0c4;
+  --line-strong:#e0c690;
+  --danger:#d64545;
+  --danger-soft:rgba(214,69,69,0.16);
+  --success-bg:#e9f8ee;
+  --success-border:#bfe8cd;
+  --success-ink:#2f8f4e;
+  --shadow:0 4px 0 var(--accent-dark);
+  --tile-shadow:0 3px 8px rgba(74,52,32,0.18);
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#2a2117;
+    --panel:#352a1c;
+    --ink:#f8ecda;
+    --ink-soft:#cbb692;
+    --accent:#f3b25e;
+    --accent-dark:#c98a2e;
+    --accent-soft:#4a3a24;
+    --line:#4d3d27;
+    --line-strong:#6b5734;
+    --danger:#e2726a;
+    --danger-soft:rgba(226,114,106,0.22);
+    --success-bg:#1f3a2a;
+    --success-border:#3a6a48;
+    --success-ink:#8fe0ab;
+    --shadow:0 4px 0 var(--accent-dark);
+    --tile-shadow:0 3px 10px rgba(0,0,0,0.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#2a2117;
+  --panel:#352a1c;
+  --ink:#f8ecda;
+  --ink-soft:#cbb692;
+  --accent:#f3b25e;
+  --accent-dark:#c98a2e;
+  --accent-soft:#4a3a24;
+  --line:#4d3d27;
+  --line-strong:#6b5734;
+  --danger:#e2726a;
+  --danger-soft:rgba(226,114,106,0.22);
+  --success-bg:#1f3a2a;
+  --success-border:#3a6a48;
+  --success-ink:#8fe0ab;
+  --shadow:0 4px 0 var(--accent-dark);
+  --tile-shadow:0 3px 10px rgba(0,0,0,0.4);
+}
+
+*{box-sizing:border-box;}
+html,body{background:var(--paper);}
+body{margin:0;padding:0;font-family:'Nunito',sans-serif;color:var(--ink);}
+h1,h2,.title-font{font-family:'Baloo 2',cursive;}
+
+.app{max-width:640px;margin:0 auto;padding:22px 16px 44px;}
+
+header{text-align:center;margin-bottom:14px;}
+header .eyebrow{
+  display:inline-block;font-family:'Baloo 2',cursive;font-size:12.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--accent-dark);background:var(--accent-soft);
+  padding:4px 14px;border-radius:999px;margin-bottom:10px;
+}
+header h1{font-size:clamp(24px,5vw,34px);margin:0 0 8px;color:var(--ink);text-wrap:balance;}
+header p{font-size:clamp(14px,2.6vw,16.5px);color:var(--ink-soft);max-width:480px;margin:0 auto;line-height:1.6;}
+
+.status-row{
+  display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 6px;
+  font-family:'Baloo 2',cursive;font-size:15px;color:var(--accent-dark);
+}
+.status-row .pill{
+  background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:7px 18px;
+  box-shadow:0 2px 0 var(--line);
+}
+.status-row .pill b{font-variant-numeric:tabular-nums;}
+
+.stage{display:flex;justify-content:center;margin:18px 0 8px;}
+.board-holder{width:min(74vw,300px);}
+.board{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+  background:var(--line-strong);padding:8px;border-radius:20px;
+  box-shadow:var(--tile-shadow);
+}
+.cell{
+  position:relative;aspect-ratio:1;border-radius:13px;background:var(--panel);
+  background-repeat:no-repeat;
+  outline:3px dashed transparent;outline-offset:-3px;
+  transition:outline-color .15s, background-color .15s, transform .18s;
+}
+.cell.empty{outline-color:var(--line-strong);}
+.cell.hover{outline-color:var(--accent);background-color:var(--accent-soft);}
+.cell.wrong-flash{outline-color:var(--danger);background-color:var(--danger-soft);}
+.cell.filled{outline:none;}
+@keyframes popIn{0%{transform:scale(.7);}55%{transform:scale(1.08);}100%{transform:scale(1);}}
+.cell.pop{animation:popIn .32s ease;}
+
+.tray-wrap{
+  margin-top:24px;background:var(--panel);border:3px dashed var(--line-strong);border-radius:20px;
+  padding:18px 14px;
+}
+.tray-label{
+  font-family:'Baloo 2',cursive;font-size:14.5px;color:var(--ink-soft);text-align:center;
+  margin:0 0 14px;
+}
+.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;min-height:110px;}
+
+.chip{
+  width:96px;height:96px;border-radius:14px;cursor:grab;touch-action:none;user-select:none;
+  background-color:var(--panel);background-repeat:no-repeat;background-size:200% 200%;
+  box-shadow:var(--tile-shadow);border:3px solid var(--line);
+}
+.chip.dragging{
+  position:fixed;z-index:1000;cursor:grabbing;box-shadow:0 12px 24px rgba(0,0,0,.3);
+  transform:scale(1.1);border-color:var(--accent);
+}
+.chip.placed{display:none;}
+.chip.shake{animation:shakeChip .34s ease;}
+@keyframes shakeChip{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+
+.controls{display:flex;justify-content:center;gap:12px;margin-top:22px;flex-wrap:wrap;}
+button{
+  font-family:'Baloo 2',cursive;font-size:16px;padding:11px 24px;border-radius:999px;
+  border:none;cursor:pointer;background:var(--accent);color:#fff;box-shadow:var(--shadow);
+}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 var(--accent-dark);}
+button.secondary{background:var(--panel);color:var(--accent-dark);border:2px solid var(--accent-dark);box-shadow:none;}
+button:focus-visible{outline:3px solid var(--accent-dark);outline-offset:2px;}
+
+#successMsg{
+  text-align:center;font-family:'Baloo 2',cursive;font-size:20px;color:var(--success-ink);
+  margin-top:18px;padding:16px;border-radius:16px;background:var(--success-bg);
+  border:2px solid var(--success-border);
+}
+#successMsg[hidden]{display:none;}
+
+.hint{
+  text-align:center;font-size:13px;color:var(--ink-soft);margin-top:16px;line-height:1.55;
+}
+
+@media (max-width:420px){
+  .chip{width:80px;height:80px;}
+}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header>
+    <span class="eyebrow">Quebra-cabeça para pequenos</span>
+    <h1>Monte o Quadrinho Colorido</h1>
+    <p>Cada peça tem pedacinhos de desenho bem na borda. Arraste até o lugar certo, ao lado da peça que tem o pedacinho que combina!</p>
+  </header>
+
+  <div class="status-row">
+    <span class="pill">🧸 <b id="progressText">0 / 4</b> encaixadas</span>
+  </div>
+
+  <div class="stage">
+    <div class="board-holder">
+      <div class="board" id="board"></div>
+    </div>
+  </div>
+
+  <div class="tray-wrap">
+    <p class="tray-label">Peças — arraste cada uma para o quadro</p>
+    <div class="tray" id="tray"></div>
+  </div>
+
+  <div id="successMsg" hidden>
+    🎉 Uhuul! Você montou o quadrinho todo certinho!
+  </div>
+
+  <div class="controls">
+    <button id="btnNew">✨ Novo quadrinho</button>
+    <button class="secondary" id="btnReset">↺ Recomeçar</button>
+  </div>
+
+  <p class="hint">💡 Dica: procure a pontinha colorida cortada na borda da peça — a peça vizinha certa tem a outra metade dela.</p>
+</div>
+
+<script>
+(function(){
+  var GRID = 2;
+  var SHAPES = ['dot','star','bar','ring'];
+  var COLORS = ['#e2574c','#3f6fd1','#27ae60','#f2c94c','#9b59b6','#f2994a'];
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function shuffle(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  function starPoints(cx,cy,outerR,innerR){
+    var pts=[];
+    for(var i=0;i<10;i++){
+      var r = i%2===0 ? outerR : innerR;
+      var ang = -Math.PI/2 + i*Math.PI/5;
+      pts.push((cx+r*Math.cos(ang)).toFixed(1)+","+(cy+r*Math.sin(ang)).toFixed(1));
+    }
+    return pts.join(' ');
+  }
+
+  function shapeMarkup(type,cx,cy,size,color){
+    if(type==='dot'){
+      return '<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+(size/2).toFixed(1)+'" fill="'+color+'"/>';
+    }
+    if(type==='ring'){
+      var r=size/2, sw=size*0.32, circ=2*Math.PI*r;
+      return '<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+r.toFixed(1)+'" fill="none" stroke="'+color+'" stroke-width="'+sw.toFixed(1)+'"/>';
+    }
+    if(type==='star'){
+      return '<polygon points="'+starPoints(cx,cy,size*0.56,size*0.24)+'" fill="'+color+'"/>';
+    }
+    var w=size*0.6, h=size*1.05;
+    return '<rect x="'+(cx-w/2).toFixed(1)+'" y="'+(cy-h/2).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="'+(w*0.35).toFixed(1)+'" fill="'+color+'" transform="rotate(20 '+cx.toFixed(1)+' '+cy.toFixed(1)+')"/>';
+  }
+
+  // Shapes are placed ON the seams between pieces, on purpose: each piece
+  // shows only a bitten-off fragment (a quarter or a half) of a shape, so the
+  // "this connects to that" relationship is visible at a glance, without
+  // needing a separate reference picture. Correctness = perceptual closure.
+  function buildPatternSVG(px){
+    var half = px/2;
+    var colorChoices = shuffle(COLORS.slice()).slice(0,5);
+    var edgeTypes = shuffle(['dot','ring','dot','ring']);
+    var content = '';
+
+    // one big shape centered exactly where all 4 pieces meet -- each piece
+    // gets a matching quarter-bite in its inner corner.
+    content += shapeMarkup('star', half, half, half*0.82, colorChoices[0]);
+
+    // four shapes straddling each shared edge -- each piece gets a
+    // matching half-bite along that edge.
+    content += shapeMarkup(edgeTypes[0], half, half*0.5, half*0.62, colorChoices[1]);   // top edge (TL|TR)
+    content += shapeMarkup(edgeTypes[1], half, half*1.5, half*0.62, colorChoices[2]);   // bottom edge (BL|BR)
+    content += shapeMarkup(edgeTypes[2], half*0.5, half, half*0.62, colorChoices[3]);   // left edge (TL|BL)
+    content += shapeMarkup(edgeTypes[3], half*1.5, half, half*0.62, colorChoices[4]);   // right edge (TR|BR)
+
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+px+' '+px+'">'+
+      '<rect width="'+px+'" height="'+px+'" fill="none"/>'+content+'</svg>';
+    return 'url("data:image/svg+xml,'+encodeURIComponent(svg)+'")';
+  }
+
+  function makePieces(bgUrl){
+    var pieces = [];
+    for(var row=0; row<GRID; row++){
+      for(var col=0; col<GRID; col++){
+        pieces.push({
+          index: row*GRID+col,
+          bgUrl: bgUrl,
+          posX: (col/(GRID-1)*100).toFixed(2)+'%',
+          posY: (row/(GRID-1)*100).toFixed(2)+'%'
+        });
+      }
+    }
+    return pieces;
+  }
+
+  var boardEl = document.getElementById('board');
+  var trayEl = document.getElementById('tray');
+  var progressText = document.getElementById('progressText');
+  var successMsg = document.getElementById('successMsg');
+  var btnNew = document.getElementById('btnNew');
+  var btnReset = document.getElementById('btnReset');
+
+  var TARGET_COUNT = GRID*GRID;
+  var state = { pieces: [], placedCount: 0, cells: [] };
+
+  function newChallenge(){
+    successMsg.hidden = true;
+    var bg = buildPatternSVG(240);
+    state.pieces = makePieces(bg);
+    resetBoard(true);
+  }
+
+  function resetBoard(reshuffleTray){
+    successMsg.hidden = true;
+    state.placedCount = 0;
+    boardEl.innerHTML = '';
+    state.cells = [];
+    for(var i=0;i<GRID*GRID;i++){
+      var cell = document.createElement('div');
+      cell.className = 'cell empty';
+      cell.dataset.index = i;
+      boardEl.appendChild(cell);
+      state.cells.push(cell);
+    }
+    if(reshuffleTray){
+      var all = shuffle(state.pieces.slice());
+      trayEl.innerHTML = '';
+      all.forEach(function(p){ trayEl.appendChild(makeChip(p)); });
+    } else {
+      var chips = trayEl.querySelectorAll('.chip');
+      chips.forEach(function(c){ c.classList.remove('placed'); });
+    }
+    updateProgress();
+  }
+
+  function makeChip(piece){
+    var chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.index = piece.index;
+    chip.style.backgroundImage = piece.bgUrl;
+    chip.style.backgroundPosition = piece.posX+' '+piece.posY;
+    attachDrag(chip);
+    return chip;
+  }
+
+  function updateProgress(){
+    progressText.textContent = state.placedCount+' / '+TARGET_COUNT;
+    if(state.placedCount === TARGET_COUNT){
+      successMsg.hidden = false;
+    }
+  }
+
+  function attachDrag(chip){
+    var dragData = null;
+
+    chip.addEventListener('pointerdown', function(e){
+      if(chip.classList.contains('placed')) return;
+      e.preventDefault();
+      var rect = chip.getBoundingClientRect();
+      dragData = {
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        width: rect.width,
+        height: rect.height,
+        placeholder: document.createComment('slot')
+      };
+      chip.parentNode.insertBefore(dragData.placeholder, chip);
+      trayEl.appendChild(chip);
+      chip.classList.add('dragging');
+      chip.style.width = dragData.width+'px';
+      chip.style.height = dragData.height+'px';
+      chip.style.pointerEvents = 'none';
+      positionChip(e.clientX, e.clientY);
+      chip.setPointerCapture(e.pointerId);
+    });
+
+    chip.addEventListener('pointermove', function(e){
+      if(!dragData) return;
+      positionChip(e.clientX, e.clientY);
+      var target = cellUnder(e.clientX, e.clientY);
+      state.cells.forEach(function(c){ c.classList.remove('hover'); });
+      if(target && target.classList.contains('empty')) target.classList.add('hover');
+    });
+
+    chip.addEventListener('pointerup', function(e){
+      if(!dragData) return;
+      var target = cellUnder(e.clientX, e.clientY);
+      state.cells.forEach(function(c){ c.classList.remove('hover'); });
+      chip.style.pointerEvents = '';
+      finishDrag(chip, target);
+      dragData.placeholder.parentNode.replaceChild(chip, dragData.placeholder);
+      dragData = null;
+    });
+
+    chip.addEventListener('pointercancel', function(){
+      if(!dragData) return;
+      dragData.placeholder.parentNode.replaceChild(chip, dragData.placeholder);
+      chip.classList.remove('dragging');
+      chip.style.pointerEvents = '';
+      chip.style.width=''; chip.style.height=''; chip.style.left=''; chip.style.top='';
+      dragData = null;
+    });
+
+    function positionChip(x,y){
+      chip.style.left = (x - dragData.offsetX)+'px';
+      chip.style.top = (y - dragData.offsetY)+'px';
+    }
+  }
+
+  function cellUnder(x,y){
+    var el = document.elementFromPoint(x,y);
+    if(!el) return null;
+    return el.closest ? el.closest('.cell') : null;
+  }
+
+  function finishDrag(chip, target){
+    chip.classList.remove('dragging');
+    chip.style.width=''; chip.style.height=''; chip.style.left=''; chip.style.top='';
+
+    if(target && target.classList.contains('empty')){
+      var idx = parseInt(chip.dataset.index,10);
+      var targetIdx = parseInt(target.dataset.index,10);
+      if(idx === targetIdx){
+        target.classList.remove('empty');
+        target.classList.add('filled');
+        target.style.backgroundImage = chip.style.backgroundImage;
+        target.style.backgroundSize = '200% 200%';
+        target.style.backgroundPosition = chip.style.backgroundPosition;
+        target.classList.add('pop');
+        setTimeout(function(){ target.classList.remove('pop'); }, 320);
+        chip.classList.add('placed');
+        state.placedCount++;
+        updateProgress();
+      } else {
+        flashWrong(target, chip);
+      }
+    } else if(target){
+      flashWrong(target, chip);
+    } else {
+      chip.classList.add('shake');
+      setTimeout(function(){ chip.classList.remove('shake'); }, 340);
+    }
+  }
+
+  function flashWrong(target, chip){
+    target.classList.add('wrong-flash');
+    setTimeout(function(){ target.classList.remove('wrong-flash'); }, 380);
+    chip.classList.add('shake');
+    setTimeout(function(){ chip.classList.remove('shake'); }, 340);
+  }
+
+  btnNew.addEventListener('click', newChallenge);
+  btnReset.addEventListener('click', function(){ resetBoard(false); });
+
+  function start(saved){
+    newChallenge();
+  }
+  if(window.claude && window.claude.hot){
+    window.claude.hot.ready ? window.claude.hot.ready(start) : start(window.claude.hot.data||{});
+  } else {
+    start({});
+  }
+})();
+</script>
+
+</body>
+</html>
